@@ -480,3 +480,5 @@
 setTimeout(function () {
   $(".loader_bg").fadeToggle();
 });
+
+

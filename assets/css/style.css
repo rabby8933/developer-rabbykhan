@@ -12463,7 +12463,7 @@ body.template-color-1 {
   background: linear-gradient(145deg, #1e2024, #23272b);
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   transition: var(--transition);
-  z-index: 2;
+  z-index: 999;
 }
 
 .demo-modal-area .demo-close-btn::after {
@@ -12497,7 +12497,7 @@ body.template-color-1 {
 
 @media only screen and (min-width: 768px) and (max-width: 991px) {
   .demo-modal-area .wrapper .rn-modal-inner {
-    padding: 40px 30px;
+    padding: 40px 20px;
   }
 }
 
