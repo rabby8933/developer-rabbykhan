@@ -1,14 +1,18 @@
 # developer-rabbykhan
 
-## 🎮 Shadow Arena — play online!
+## 🔥 FIRE STORM — Battle Royale, play online!
 
-A fast browser action-survival game. Survive the monster waves, level up, choose your powers, defeat the bosses — then challenge your friends to beat your score.
+A free browser battle royale shooter. Drop onto the island with 15 fighters, loot guns and armor, survive the shrinking fire zone — last one standing wins the **BOOYAH**.
 
-**▶ Play:** https://rabby8933.github.io/developer-rabbykhan/game/
+**▶ Play:** https://rabby8933.github.io/developer-rabbykhan/game/index.html
 
 - Works instantly in any browser — no download, no install
-- Desktop: **WASD / Arrows** to move, **SPACE** to dash, auto-fire at the nearest monster
-- Mobile: drag anywhere to move, tap **DASH**
-- After a run, hit **⚔ Challenge a friend** to share a link with your score built in
+- Desktop: **WASD** move, **mouse** aim, **click/hold** shoot, **R** reload, **H** medkit
+- Mobile: left stick moves, right stick aims & fires, ✚ heals
+- 5 weapons (pistol, shotgun, SMG, rifle, sniper), armor vests, medkits, ammo
+- Shrinking danger zone, minimap, kill feed, 16-player matches vs AI fighters
+- After a match, hit **🔥 Challenge a friend** to share a link with your placement & kills built in
 
-The whole game is a single self-contained file: [`game/index.html`](game/index.html)
+Also included: 🕹 **Shadow Arena** (classic wave-survival mode) at [`game/arena.html`](game/arena.html)
+
+The whole game is self-contained: [`game/index.html`](game/index.html)
