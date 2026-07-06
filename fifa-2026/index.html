@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>⚽ ORACLE 2026 — World Cup Match Predictor</title>
+<meta name="description" content="Predict any FIFA World Cup 2026 matchup: win probabilities, most likely score, and full-tournament champion odds from thousands of simulations.">
+<link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<style>
+  :root{
+    --bg:#071410;
+    --panel:rgba(9,28,20,.88);
+    --edge:rgba(80,220,150,.25);
+    --green:#4ade80;
+    --gold:#fbbf24;
+    --text:#e2f5ea;
+    --dim:#7fa892;
+    --red:#fb7185;
+    --blue:#60a5fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1000px 500px at 50% -10%, rgba(74,222,128,.10), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 90px, transparent 90px 180px),
+      var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    min-height:100vh;overflow-x:hidden;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:28px 16px 64px}
+
+  header{text-align:center;margin-bottom:24px}
+  .logo{
+    font-size:clamp(30px,6vw,50px);font-weight:800;letter-spacing:.04em;
+    background:linear-gradient(90deg,var(--green),#fff 50%,var(--gold));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .tagline{color:var(--dim);margin-top:6px;font-size:13px;letter-spacing:.16em;text-transform:uppercase}
+  .hosts{margin-top:8px;font-size:14px;color:var(--gold)}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--edge);border-radius:16px;
+    padding:22px;backdrop-filter:blur(6px);
+    box-shadow:0 0 60px rgba(74,222,128,.06);
+    margin-bottom:20px;
+  }
+  .panel h2{
+    font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);
+    margin-bottom:16px;display:flex;align-items:center;gap:10px;
+  }
+  .panel h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(74,222,128,.4),transparent)}
+
+  /* ------- matchup picker ------- */
+  .versus{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+  .team-box{display:flex;flex-direction:column;gap:8px}
+  .team-box label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.14em;text-align:center}
+  select{
+    width:100%;background:#06231a;border:1px solid var(--edge);color:var(--text);
+    padding:13px 10px;border-radius:12px;font-size:16px;font-family:inherit;cursor:pointer;
+    text-align:center;appearance:none;-webkit-appearance:none;
+  }
+  select:focus{outline:none;border-color:var(--green)}
+  .vs-badge{
+    width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 35% 30%,#fff5,transparent),linear-gradient(135deg,var(--green),var(--gold));
+    color:#04150d;font-weight:800;font-size:16px;letter-spacing:.05em;
+    box-shadow:0 0 24px rgba(251,191,36,.35);
+  }
+  .flagline{text-align:center;font-size:44px;line-height:1;min-height:48px}
+
+  .stage{display:flex;gap:8px;justify-content:center;margin-top:18px}
+  .stage button{
+    border:1px solid var(--edge);background:transparent;color:var(--dim);padding:8px 18px;
+    border-radius:999px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .stage button.on{background:rgba(74,222,128,.15);color:var(--green);border-color:var(--green)}
+
+  .predict-btn{
+    display:block;margin:20px auto 0;padding:15px 52px;font-size:18px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:#04150d;cursor:pointer;
+    border:none;border-radius:14px;font-family:inherit;
+    background:linear-gradient(90deg,var(--green),var(--gold));
+    box-shadow:0 0 26px rgba(74,222,128,.4),0 5px 0 rgba(6,60,35,.9);
+    transition:transform .12s;
+  }
+  .predict-btn:hover{transform:translateY(-2px)}
+  .predict-btn:active{transform:translateY(2px)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+  .chip{
+    border:1px solid var(--edge);background:rgba(74,222,128,.05);color:var(--text);
+    padding:7px 12px;border-radius:999px;font-size:13px;cursor:pointer;transition:.15s;font-family:inherit;
+  }
+  .chip:hover{background:rgba(74,222,128,.16);border-color:var(--green);transform:translateY(-1px)}
+
+  /* ------- result ------- */
+  #result{display:none;animation:pop .5s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(18px)}to{opacity:1}}
+  .res-head{text-align:center;margin-bottom:6px;font-size:clamp(20px,4.6vw,30px);font-weight:800;color:#fff}
+  .res-head .fl{font-size:1.2em;vertical-align:-2px}
+  .res-stage{text-align:center;color:var(--dim);font-size:12px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:18px}
+
+  .bars{display:grid;gap:10px;margin:14px 0 4px}
+  .bar-row{display:grid;grid-template-columns:110px 1fr 64px;gap:10px;align-items:center;font-size:14px}
+  .bar-row .who{text-align:right;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar-track{height:22px;background:rgba(0,0,0,.35);border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+  .bar-fill{height:100%;border-radius:999px;width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+  .bar-fill.a{background:linear-gradient(90deg,#34d399,var(--green))}
+  .bar-fill.d{background:linear-gradient(90deg,#64748b,#94a3b8)}
+  .bar-fill.b{background:linear-gradient(90deg,#3b82f6,var(--blue))}
+  .bar-row .pct{font-family:"Consolas",monospace;font-weight:700;color:#fff}
+
+  .scoreline{
+    text-align:center;margin:20px 0 6px;font-family:"Consolas",monospace;
+  }
+  .scoreline .num{
+    display:inline-block;min-width:64px;padding:10px 16px;border-radius:12px;
+    background:rgba(0,0,0,.4);border:1px solid var(--edge);
+    font-size:38px;font-weight:800;color:var(--gold);
+  }
+  .scoreline .dash{color:var(--dim);font-size:30px;margin:0 10px}
+  .scoreline .cap{display:block;margin-top:8px;color:var(--dim);font-size:12px;letter-spacing:.15em;text-transform:uppercase}
+
+  .verdict{
+    margin-top:18px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.3);
+    border-radius:12px;padding:14px 18px;font-size:14.5px;line-height:1.6;
+  }
+  .verdict b{color:var(--gold)}
+
+  .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+  .btn{
+    border:1px solid var(--edge);background:rgba(74,222,128,.07);color:var(--text);
+    padding:11px 20px;border-radius:12px;font-size:14px;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .btn:hover{background:rgba(74,222,128,.18);border-color:var(--green)}
+
+  /* ------- champion odds ------- */
+  .sim-note{color:var(--dim);font-size:13.5px;line-height:1.6;margin-bottom:14px}
+  #simBtn{margin-top:4px}
+  #champList{display:none;margin-top:18px}
+  .champ-row{display:grid;grid-template-columns:34px 34px 1fr 64px;gap:10px;align-items:center;padding:7px 0;font-size:14.5px}
+  .champ-row .rank{color:var(--dim);font-family:monospace;text-align:right}
+  .champ-row .cf{font-size:22px;text-align:center}
+  .champ-row .cbar{position:relative;height:24px;background:rgba(0,0,0,.35);border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
+  .champ-row .cbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,rgba(74,222,128,.75),rgba(251,191,36,.85));border-radius:8px;width:0;transition:width .9s ease}
+  .champ-row .cbar span{position:absolute;left:10px;top:0;bottom:0;display:flex;align-items:center;font-size:13px;color:#fff;text-shadow:0 1px 3px #000;z-index:1;font-weight:600}
+  .champ-row .cpct{font-family:"Consolas",monospace;font-weight:700;color:var(--gold);text-align:right}
+  .champ-row:first-child .cpct::after{content:" 🏆"}
+  #simStatus{color:var(--dim);font-size:13px;margin-top:10px;font-family:monospace;min-height:18px}
+
+  footer{text-align:center;margin-top:36px;color:var(--dim);font-size:12px;line-height:1.8}
+  footer a{color:var(--green);text-decoration:none}
+
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);
+    background:rgba(6,30,20,.96);border:1px solid var(--green);color:var(--text);
+    padding:11px 20px;border-radius:10px;font-size:14px;z-index:90;
+    opacity:0;pointer-events:none;transition:transform .3s,opacity .3s;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  @media (max-width:560px){
+    .versus{grid-template-columns:1fr;gap:8px}
+    .vs-badge{margin:0 auto}
+    .bar-row{grid-template-columns:84px 1fr 56px;font-size:13px}
+    .panel{padding:16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">⚽ ORACLE 2026</div>
+    <div class="tagline">FIFA World Cup 2026 · Match Predictor</div>
+    <div class="hosts">🇺🇸 United States · 🇨🇦 Canada · 🇲🇽 Mexico — 48 teams · 104 matches</div>
+  </header>
+
+  <!-- MATCH PICKER -->
+  <div class="panel">
+    <h2>🎯 Pick a matchup</h2>
+    <div class="versus">
+      <div class="team-box">
+        <label>Team A</label>
+        <div class="flagline" id="flagA">🇦🇷</div>
+        <select id="selA"></select>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="team-box">
+        <label>Team B</label>
+        <div class="flagline" id="flagB">🇧🇷</div>
+        <select id="selB"></select>
+      </div>
+    </div>
+
+    <div class="stage">
+      <button id="stGroup" class="on">Group stage</button>
+      <button id="stKO">Knockout (must decide)</button>
+    </div>
+
+    <button class="predict-btn" id="predictBtn">🔮 Predict</button>
+
+    <div class="chips" id="hotChips">
+      <span style="color:var(--dim);font-size:12px;align-self:center">Hot matchups:</span>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="panel" id="result">
+    <div class="res-head" id="resTitle"></div>
+    <div class="res-stage" id="resStage"></div>
+
+    <div class="bars">
+      <div class="bar-row"><span class="who" id="labA"></span><div class="bar-track"><div class="bar-fill a" id="barA"></div></div><span class="pct" id="pctA"></span></div>
+      <div class="bar-row" id="rowDraw"><span class="who">Draw</span><div class="bar-track"><div class="bar-fill d" id="barD"></div></div><span class="pct" id="pctD"></span></div>
+      <div class="bar-row"><span class="who" id="labB"></span><div class="bar-track"><div class="bar-fill b" id="barB"></div></div><span class="pct" id="pctB"></span></div>
+    </div>
+
+    <div class="scoreline">
+      <span class="num" id="scoreA">1</span><span class="dash">–</span><span class="num" id="scoreB">0</span>
+      <span class="cap">most likely score</span>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+
+    <div class="actions">
+      <button class="btn" id="shareBtn">🔗 Share this prediction</button>
+      <button class="btn" id="swapBtn">🔄 Swap teams</button>
+    </div>
+  </div>
+
+  <!-- CHAMPION ODDS -->
+  <div class="panel">
+    <h2>🏆 Who lifts the trophy?</h2>
+    <div class="sim-note">
+      The oracle plays the <b>entire 48-team World Cup</b> — group stage, round of 32, all the way to the final —
+      thousands of times, with realistic upsets. Here's how often each nation wins it all.
+    </div>
+    <button class="predict-btn" id="simBtn" style="margin:0">🎲 Simulate 5,000 World Cups</button>
+    <div id="simStatus"></div>
+    <div id="champList"></div>
+  </div>
+
+  <footer>
+    ORACLE 2026 · a fan-made predictor, for fun — not betting advice.<br>
+    Predictions come from Elo-style team strength ratings (frozen early 2026), converted to win/draw
+    probabilities and Poisson score odds. Football is beautiful because the ball doesn't read ratings.<br>
+    Teams marked * hold March-2026 playoff slots in our data.
+    More toys: <a href="../time-machine/index.html">⏳ Time machine</a> · <a href="../game/index.html">🔥 FIRE STORM</a> · <a href="../index.html">portfolio</a>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   ORACLE 2026 — World Cup match predictor
+   Elo-style ratings (early 2026 snapshot) → win/draw/loss probabilities
+   via logistic expectancy + Poisson goal model. * = playoff-slot team.
+   ===================================================================== */
+const TEAMS = [
+  // code, name, flag, rating, playoff-star
+  ["ESP","Spain","🇪🇸",2170],
+  ["ARG","Argentina","🇦🇷",2145],
+  ["FRA","France","🇫🇷",2090],
+  ["ENG","England","🏴󠁧󠁢󠁥󠁮󠁧󠁿",2080],
+  ["BRA","Brazil","🇧🇷",2040],
+  ["POR","Portugal","🇵🇹",2030],
+  ["NED","Netherlands","🇳🇱",1990],
+  ["GER","Germany","🇩🇪",1985],
+  ["COL","Colombia","🇨🇴",1975],
+  ["URU","Uruguay","🇺🇾",1945],
+  ["BEL","Belgium","🇧🇪",1935],
+  ["MAR","Morocco","🇲🇦",1935],
+  ["CRO","Croatia","🇭🇷",1930],
+  ["JPN","Japan","🇯🇵",1925],
+  ["ITA","Italy","🇮🇹",1915,1],
+  ["ECU","Ecuador","🇪🇨",1900],
+  ["NOR","Norway","🇳🇴",1860],
+  ["AUT","Austria","🇦🇹",1855],
+  ["DEN","Denmark","🇩🇰",1855,1],
+  ["MEX","Mexico","🇲🇽",1850],
+  ["SUI","Switzerland","🇨🇭",1840],
+  ["TUR","Türkiye","🇹🇷",1830,1],
+  ["SEN","Senegal","🇸🇳",1825],
+  ["KOR","South Korea","🇰🇷",1820],
+  ["UKR","Ukraine","🇺🇦",1815,1],
+  ["CAN","Canada","🇨🇦",1810],
+  ["POL","Poland","🇵🇱",1795,1],
+  ["IRN","Iran","🇮🇷",1795],
+  ["USA","United States","🇺🇸",1790],
+  ["CIV","Ivory Coast","🇨🇮",1780],
+  ["ALG","Algeria","🇩🇿",1775],
+  ["PAR","Paraguay","🇵🇾",1775],
+  ["AUS","Australia","🇦🇺",1770],
+  ["EGY","Egypt","🇪🇬",1755],
+  ["SCO","Scotland","🏴󠁧󠁢󠁳󠁣󠁴󠁿",1745],
+  ["TUN","Tunisia","🇹🇳",1735],
+  ["WAL","Wales","🏴󠁧󠁢󠁷󠁬󠁳󠁿",1735,1],
+  ["GHA","Ghana","🇬🇭",1720],
+  ["COD","DR Congo","🇨🇩",1690,1],
+  ["IRQ","Iraq","🇮🇶",1685,1],
+  ["BOL","Bolivia","🇧🇴",1680,1],
+  ["KSA","Saudi Arabia","🇸🇦",1670],
+  ["QAT","Qatar","🇶🇦",1665],
+  ["UZB","Uzbekistan","🇺🇿",1660],
+  ["PAN","Panama","🇵🇦",1655],
+  ["RSA","South Africa","🇿🇦",1645],
+  ["JOR","Jordan","🇯🇴",1640],
+  ["JAM","Jamaica","🇯🇲",1620,1],
+  ["NZL","New Zealand","🇳🇿",1585],
+  ["CUW","Curaçao","🇨🇼",1580],
+  ["HAI","Haiti","🇭🇹",1560],
+  ["CPV","Cape Verde","🇨🇻",1550],
+].map(t => ({c:t[0], n:t[1], f:t[2], e:t[3], star:!!t[4]}));
+
+const byCode = Object.fromEntries(TEAMS.map(t => [t.c, t]));
+const $ = id => document.getElementById(id);
+
+/* ---------- fill selectors ---------- */
+const optHtml = TEAMS.map(t => `<option value="${t.c}">${t.f} ${t.n}${t.star?" *":""}</option>`).join("");
+$("selA").innerHTML = optHtml;
+$("selB").innerHTML = optHtml;
+$("selA").value = "ARG"; $("selB").value = "BRA";
+
+function syncFlags(){
+  $("flagA").textContent = byCode[$("selA").value].f;
+  $("flagB").textContent = byCode[$("selB").value].f;
+}
+$("selA").addEventListener("change", syncFlags);
+$("selB").addEventListener("change", syncFlags);
+syncFlags();
+
+/* ---------- stage toggle ---------- */
+let knockout = false;
+$("stGroup").addEventListener("click", () => { knockout = false; $("stGroup").classList.add("on"); $("stKO").classList.remove("on"); });
+$("stKO").addEventListener("click", () => { knockout = true;  $("stKO").classList.add("on"); $("stGroup").classList.remove("on"); });
+
+/* ---------- hot matchups ---------- */
+const HOT = [["BRA","ARG"],["ENG","FRA"],["ESP","GER"],["USA","MEX"],["POR","FRA"],["ARG","ESP"],["JPN","BRA"],["MAR","ESP"]];
+for(const [a,b] of HOT){
+  const el = document.createElement("button");
+  el.className = "chip";
+  el.textContent = byCode[a].f + " vs " + byCode[b].f + " " + byCode[a].c + "–" + byCode[b].c;
+  el.addEventListener("click", () => { $("selA").value = a; $("selB").value = b; syncFlags(); doPredict(); });
+  $("hotChips").appendChild(el);
+}
+
+/* ---------- math: Elo → probabilities → Poisson scores ---------- */
+function expectancy(ra, rb){ return 1/(1+Math.pow(10, -(ra-rb)/400)); }
+function poisson(l, k){ let p = Math.exp(-l); for(let i=1;i<=k;i++) p *= l/i; return p; }
+
+function matchModel(a, b){
+  const we = expectancy(a.e, b.e);
+  const total = 2.55;                       // avg goals per WC match
+  const la = Math.max(.2, total*Math.pow(we, .92));
+  const lb = Math.max(.2, total*Math.pow(1-we, .92));
+  let pA=0, pD=0, pB=0, best={p:-1, ga:1, gb:0};
+  for(let ga=0; ga<=8; ga++) for(let gb=0; gb<=8; gb++){
+    const p = poisson(la,ga)*poisson(lb,gb);
+    if(ga>gb) pA+=p; else if(ga<gb) pB+=p; else pD+=p;
+    if(p > best.p) best = {p, ga, gb};
+  }
+  const s = pA+pD+pB; pA/=s; pD/=s; pB/=s;
+  // knockout: draws resolved in extra time / penalties, slight edge to the stronger side
+  const pAKO = pA + pD*(.5 + (we-.5)*.55);
+  return {we, pA, pD, pB, pAKO, pBKO:1-pAKO, best, la, lb};
+}
+
+/* ---------- verdict copy ---------- */
+function verdictText(a, b, m, ko){
+  const p = ko ? m.pAKO : m.pA;
+  const fav = p >= .5 ? a : b, dog = p >= .5 ? b : a;
+  const fp = Math.round(Math.max(p, 1-p) * 100);
+  let line;
+  if(fp >= 78)      line = `<b>${fav.n}</b> should win this comfortably — anything else is a genuine World Cup shock.`;
+  else if(fp >= 65) line = `<b>${fav.n}</b> are clear favourites, but ${dog.n} winning wouldn't be the biggest upset of the tournament.`;
+  else if(fp >= 56) line = `<b>${fav.n}</b> have the edge — a tight match that one moment of magic decides.`;
+  else              line = `Genuine coin flip. <b>${fav.n}</b> by a whisker on the ratings, but nobody sane would bet the house.`;
+  const koNote = ko && m.pD > .24 ? ` High chance this one needs extra time — pencil in penalties (${Math.round(m.pD*100)}% draw odds in 90 minutes).` : "";
+  return `<b>Oracle's call:</b> ${line}${koNote} <i>(strength ratings: ${a.n} ${a.e} · ${b.n} ${b.e})</i>`;
+}
+
+/* ---------- predict & render ---------- */
+function doPredict(push=true){
+  let A = byCode[$("selA").value], B = byCode[$("selB").value];
+  if(A.c === B.c){ toast("Pick two different teams — a team can't play itself. Yet."); return; }
+  const m = matchModel(A, B);
+
+  $("resTitle").innerHTML = `<span class="fl">${A.f}</span> ${A.n} <span style="color:var(--dim)">vs</span> ${B.n} <span class="fl">${B.f}</span>`;
+  $("resStage").textContent = knockout ? "Knockout — a winner must emerge" : "Group stage — draw allowed";
+
+  const pa = knockout ? m.pAKO : m.pA;
+  const pd = knockout ? 0 : m.pD;
+  const pb = knockout ? m.pBKO : m.pB;
+  $("rowDraw").style.display = knockout ? "none" : "grid";
+  $("labA").textContent = A.n; $("labB").textContent = B.n;
+
+  $("result").style.display = "block";
+  requestAnimationFrame(() => {
+    $("barA").style.width = (pa*100).toFixed(1)+"%"; $("pctA").textContent = Math.round(pa*100)+"%";
+    $("barD").style.width = (pd*100).toFixed(1)+"%"; $("pctD").textContent = Math.round(pd*100)+"%";
+    $("barB").style.width = (pb*100).toFixed(1)+"%"; $("pctB").textContent = Math.round(pb*100)+"%";
+  });
+
+  // most likely score; in knockout, if modal score is a draw, show the nearest winning score for the favourite
+  let {ga, gb} = m.best;
+  if(knockout && ga === gb){ if(m.pAKO >= .5) ga++; else gb++; }
+  $("scoreA").textContent = ga; $("scoreB").textContent = gb;
+
+  $("verdict").innerHTML = verdictText(A, B, m, knockout);
+  if(push) history.replaceState(null, "", `?a=${A.c}&b=${B.c}${knockout?"&ko=1":""}`);
+  $("result").scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+$("predictBtn").addEventListener("click", () => doPredict());
+$("swapBtn").addEventListener("click", () => {
+  const a = $("selA").value; $("selA").value = $("selB").value; $("selB").value = a;
+  syncFlags(); doPredict();
+});
+$("shareBtn").addEventListener("click", async () => {
+  const A = byCode[$("selA").value], B = byCode[$("selB").value];
+  const m = matchModel(A, B);
+  const p = Math.round((knockout ? m.pAKO : m.pA)*100);
+  const url = location.origin + location.pathname + `?a=${A.c}&b=${B.c}${knockout?"&ko=1":""}`;
+  const text = `⚽ ORACLE 2026 says ${A.n} ${p}% vs ${B.n} — see the full prediction:`;
+  try{
+    if(navigator.share){ await navigator.share({title:"ORACLE 2026", text, url}); return; }
+    await navigator.clipboard.writeText(text + " " + url);
+    toast("Prediction copied — challenge your friends!");
+  }catch(e){ toast(url); }
+});
+
+/* ---------- full tournament Monte Carlo ---------- */
+// 48-team field: all confirmed teams + highest-rated playoff-slot holders to fill 48
+const FIELD = [...TEAMS].sort((x,y)=>((x.star?1:0)-(y.star?1:0)) || (y.e-x.e)).slice(0,48);
+
+function sampleMatch(a, b, rng, groupStage){
+  const m = matchModel(a, b);
+  const r = rng();
+  if(groupStage){
+    if(r < m.pA) return 1;      // a wins
+    if(r < m.pA + m.pD) return 0; // draw
+    return -1;
+  }
+  return r < m.pAKO ? 1 : -1;
+}
+
+function simulateOne(rng){
+  // shuffle into 12 groups of 4
+  const pool = [...FIELD];
+  for(let i=pool.length-1; i>0; i--){ const j = Math.floor(rng()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const qualified = [], thirds = [];
+  for(let g=0; g<12; g++){
+    const grp = pool.slice(g*4, g*4+4).map(t => ({t, pts:0, tie:rng()}));
+    for(let i=0;i<4;i++) for(let j=i+1;j<4;j++){
+      const res = sampleMatch(grp[i].t, grp[j].t, rng, true);
+      if(res === 1) grp[i].pts += 3; else if(res === -1) grp[j].pts += 3;
+      else { grp[i].pts++; grp[j].pts++; }
+    }
+    grp.sort((x,y) => y.pts - x.pts || y.tie - x.tie);
+    qualified.push(grp[0].t, grp[1].t);
+    thirds.push(grp[2]);
+  }
+  thirds.sort((x,y) => y.pts - x.pts || y.tie - x.tie);
+  let round = qualified.concat(thirds.slice(0,8).map(x => x.t)); // 32 teams
+  // light seeding: sort by rating with noise, then pair top half vs bottom half reversed
+  round.sort((x,y) => (y.e + rng()*140) - (x.e + rng()*140));
+  while(round.length > 1){
+    const next = [];
+    const n = round.length;
+    for(let i=0; i<n/2; i++){
+      const a = round[i], b = round[n-1-i];
+      next.push(sampleMatch(a, b, rng, false) === 1 ? a : b);
+    }
+    round = next;
+  }
+  return round[0];
+}
+
+let simRunning = false;
+$("simBtn").addEventListener("click", () => {
+  if(simRunning) return;
+  simRunning = true;
+  const N = 5000, counts = {};
+  let done = 0;
+  const rng = Math.random;
+  $("simStatus").textContent = "⏳ Playing tournament 0 / " + N.toLocaleString() + "…";
+  (function batch(){
+    const end = Math.min(N, done + 250);
+    for(; done < end; done++){
+      const w = simulateOne(rng);
+      counts[w.c] = (counts[w.c] || 0) + 1;
+    }
+    $("simStatus").textContent = "⏳ Playing tournament " + done.toLocaleString() + " / " + N.toLocaleString() + "…";
+    if(done < N){ setTimeout(batch, 0); return; }
+    // render
+    const rows = Object.entries(counts).map(([c,k]) => ({t:byCode[c], pct:100*k/N}))
+      .sort((x,y) => y.pct - x.pct).slice(0,14);
+    const max = rows[0].pct;
+    $("champList").innerHTML = rows.map((r,i) =>
+      `<div class="champ-row">
+         <span class="rank">${i+1}.</span>
+         <span class="cf">${r.t.f}</span>
+         <div class="cbar"><span>${r.t.n}${r.t.star?" *":""}</span><i data-w="${(r.pct/max*100).toFixed(1)}"></i></div>
+         <span class="cpct">${r.pct.toFixed(1)}%</span>
+       </div>`).join("");
+    $("champList").style.display = "block";
+    requestAnimationFrame(() =>
+      document.querySelectorAll("#champList .cbar i").forEach(el => el.style.width = el.dataset.w + "%"));
+    $("simStatus").textContent = "✅ " + N.toLocaleString() + " World Cups played. Football remains gloriously unpredictable.";
+    simRunning = false;
+  })();
+});
+
+/* ---------- toast + shared-link boot ---------- */
+function toast(msg){
+  const el = $("toast");
+  el.textContent = msg; el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2600);
+}
+const q = new URLSearchParams(location.search);
+if(byCode[q.get("a")] && byCode[q.get("b")]){
+  $("selA").value = q.get("a"); $("selB").value = q.get("b"); syncFlags();
+  if(q.get("ko") === "1"){ knockout = true; $("stKO").classList.add("on"); $("stGroup").classList.remove("on"); }
+  doPredict(false);
+}
+</script>
+</body>
+</html>
