@@ -1,5 +1,18 @@
 # developer-rabbykhan
 
+## ⏳ CHRONO-9000 — a time machine to see the future!
+
+Step into the machine, dial any year up to 3000, hit **⚡ ENGAGE**, and warp through a starfield to your destination. When you arrive you get a full **future report**:
+
+**▶ Travel:** https://rabby8933.github.io/developer-rabbykhan/time-machine/index.html
+
+- 🛰 Real predicted events on record for your era — eclipses, Halley's Comet, the Year-2038 bug, asteroid flybys (tagged `real`/`cosmic`)
+- 📰 Intercepted headlines from the future — every year has its own, stable set
+- 🎂 Enter your birth year to see how old you'd be when you arrive
+- 🔗 Share a jump with a link like `?year=2150` — friends land straight in your future
+- 📓 Captain's travel log remembers your previous jumps
+- Entirely self-contained in one file: [`time-machine/index.html`](time-machine/index.html) — forward travel only (paradox insurance is expensive)
+
 ## 🔥 FIRE STORM — Battle Royale, play online!
 
 A free browser battle royale shooter. Drop onto the island with 15 fighters, loot guns and armor, survive the shrinking fire zone — last one standing wins the **BOOYAH**.
