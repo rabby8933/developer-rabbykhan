@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>⏳ CHRONO-9000 — Time Machine to the Future</title>
+<meta name="description" content="Step into the CHRONO-9000 time machine, pick any year in the future, and see what awaits: real predicted events, your future age, and headlines from tomorrow.">
+<link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏳</text></svg>">
+<style>
+  :root{
+    --bg:#04060f;
+    --panel:rgba(10,16,34,.82);
+    --edge:rgba(94,204,255,.28);
+    --cyan:#5eccff;
+    --violet:#a78bfa;
+    --amber:#ffc857;
+    --text:#dbe7ff;
+    --dim:#7f93bd;
+    --danger:#ff6b8b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+  #stars{position:fixed;inset:0;z-index:0;display:block}
+  .wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:28px 16px 64px}
+
+  /* ---------- header ---------- */
+  header{text-align:center;margin-bottom:22px}
+  .logo{
+    font-size:clamp(30px,6vw,52px);
+    font-weight:800;letter-spacing:.06em;
+    background:linear-gradient(90deg,var(--cyan),var(--violet) 55%,var(--amber));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 40px rgba(94,204,255,.25);
+  }
+  .tagline{color:var(--dim);margin-top:6px;font-size:14px;letter-spacing:.14em;text-transform:uppercase}
+  .now{margin-top:10px;font-family:"Consolas","Menlo",monospace;font-size:13px;color:var(--cyan);opacity:.85}
+
+  /* ---------- console panel ---------- */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:16px;
+    padding:22px;
+    backdrop-filter:blur(6px);
+    box-shadow:0 0 60px rgba(94,204,255,.08), inset 0 0 40px rgba(94,204,255,.03);
+  }
+  .panel h2{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-bottom:16px}
+
+  .year-display{
+    text-align:center;
+    font-family:"Consolas","Menlo",monospace;
+    font-size:clamp(46px,12vw,84px);
+    font-weight:700;
+    color:var(--cyan);
+    text-shadow:0 0 24px rgba(94,204,255,.55);
+    line-height:1;
+    margin:8px 0 4px;
+    font-variant-numeric:tabular-nums;
+  }
+  .year-sub{text-align:center;color:var(--dim);font-size:13px;min-height:18px;margin-bottom:18px}
+
+  input[type=range]{
+    width:100%;appearance:none;-webkit-appearance:none;height:8px;border-radius:6px;
+    background:linear-gradient(90deg,#123,#265,#523);outline:none;cursor:pointer;
+    background:linear-gradient(90deg,rgba(94,204,255,.5),rgba(167,139,250,.5),rgba(255,200,87,.5));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#fff,var(--cyan) 45%,#0a4a66);
+    border:2px solid #cfeeff;box-shadow:0 0 16px rgba(94,204,255,.9);cursor:grab;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:24px;height:24px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#fff,var(--cyan) 45%,#0a4a66);
+    border:2px solid #cfeeff;box-shadow:0 0 16px rgba(94,204,255,.9);cursor:grab;
+  }
+  .slider-labels{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-top:6px;font-family:monospace}
+
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center}
+  .chip{
+    border:1px solid var(--edge);background:rgba(94,204,255,.06);color:var(--text);
+    padding:7px 13px;border-radius:999px;font-size:13px;cursor:pointer;transition:.15s;
+    font-family:inherit;
+  }
+  .chip:hover{background:rgba(94,204,255,.18);border-color:var(--cyan);transform:translateY(-1px)}
+  .chip.far{border-color:rgba(255,200,87,.35);background:rgba(255,200,87,.06)}
+  .chip.far:hover{background:rgba(255,200,87,.16);border-color:var(--amber)}
+
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:20px;justify-content:center}
+  .birth{
+    display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;
+  }
+  .birth input{
+    width:90px;background:rgba(0,0,0,.35);border:1px solid var(--edge);color:var(--text);
+    padding:8px 10px;border-radius:8px;font-family:monospace;font-size:14px;text-align:center;
+  }
+  .birth input:focus{outline:none;border-color:var(--cyan)}
+
+  .engage{
+    display:block;margin:22px auto 0;padding:16px 54px;font-size:19px;font-weight:800;
+    letter-spacing:.18em;text-transform:uppercase;color:#02131c;cursor:pointer;
+    border:none;border-radius:14px;font-family:inherit;
+    background:linear-gradient(90deg,var(--cyan),var(--violet));
+    box-shadow:0 0 30px rgba(94,204,255,.45), 0 6px 0 rgba(10,60,90,.9);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .engage:hover{transform:translateY(-2px);box-shadow:0 0 44px rgba(94,204,255,.7), 0 8px 0 rgba(10,60,90,.9)}
+  .engage:active{transform:translateY(2px);box-shadow:0 0 20px rgba(94,204,255,.4), 0 2px 0 rgba(10,60,90,.9)}
+
+  /* ---------- warp overlay ---------- */
+  #warp{
+    position:fixed;inset:0;z-index:50;background:#000;display:none;
+    align-items:center;justify-content:center;flex-direction:column;
+  }
+  #warp.on{display:flex}
+  #warpCanvas{position:absolute;inset:0;width:100%;height:100%}
+  .warp-year{
+    position:relative;z-index:2;font-family:"Consolas",monospace;font-weight:800;
+    font-size:clamp(52px,14vw,120px);color:#fff;
+    text-shadow:0 0 30px var(--cyan),0 0 80px var(--violet);
+    font-variant-numeric:tabular-nums;
+  }
+  .warp-msg{position:relative;z-index:2;margin-top:14px;color:var(--cyan);letter-spacing:.3em;text-transform:uppercase;font-size:13px;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  /* ---------- report ---------- */
+  #report{display:none;margin-top:26px;animation:arrive .8s ease}
+  @keyframes arrive{from{opacity:0;transform:translateY(26px) scale(.98)}to{opacity:1}}
+  .report-head{text-align:center;margin-bottom:18px}
+  .report-head .stamp{
+    display:inline-block;border:2px dashed rgba(255,200,87,.5);color:var(--amber);
+    padding:6px 18px;border-radius:10px;letter-spacing:.25em;font-size:12px;text-transform:uppercase;
+    transform:rotate(-2deg);margin-bottom:12px;
+  }
+  .report-head h1{font-size:clamp(26px,6vw,42px);color:#fff;text-shadow:0 0 30px rgba(167,139,250,.6)}
+  .report-head .sub{color:var(--dim);margin-top:6px;font-size:14px}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0}
+  .stat{
+    background:rgba(0,0,0,.3);border:1px solid var(--edge);border-radius:12px;
+    padding:14px;text-align:center;
+  }
+  .stat .v{font-family:"Consolas",monospace;font-size:22px;font-weight:700;color:var(--cyan)}
+  .stat .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em;margin-top:5px}
+  .stat.you .v{color:var(--amber)}
+
+  .section{margin-top:26px}
+  .section h3{
+    font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--violet);
+    margin-bottom:12px;display:flex;align-items:center;gap:10px;
+  }
+  .section h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(167,139,250,.5),transparent)}
+
+  .timeline{list-style:none}
+  .timeline li{
+    display:flex;gap:14px;padding:11px 0;border-bottom:1px dashed rgba(94,204,255,.14);
+    font-size:14.5px;line-height:1.5;
+  }
+  .timeline li:last-child{border-bottom:none}
+  .timeline .yr{
+    flex:0 0 78px;font-family:"Consolas",monospace;color:var(--cyan);font-weight:700;text-align:right;
+  }
+  .timeline .yr.past{color:var(--dim);text-decoration:line-through;opacity:.7}
+  .timeline .ev b{color:#fff}
+  .timeline .tag{
+    display:inline-block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 7px;border-radius:6px;margin-left:8px;vertical-align:1px;
+  }
+  .tag.real{background:rgba(94,204,255,.15);color:var(--cyan);border:1px solid rgba(94,204,255,.3)}
+  .tag.cosmic{background:rgba(255,200,87,.12);color:var(--amber);border:1px solid rgba(255,200,87,.3)}
+
+  .news{list-style:none;display:grid;gap:10px}
+  .news li{
+    background:rgba(0,0,0,.28);border:1px solid var(--edge);border-left:4px solid var(--violet);
+    border-radius:10px;padding:12px 15px;font-size:14.5px;line-height:1.55;
+  }
+  .news li b{color:#fff}
+  .news .src{display:block;margin-top:5px;color:var(--dim);font-size:11.5px;font-style:italic}
+
+  .oracle{
+    margin-top:22px;background:rgba(255,200,87,.06);border:1px solid rgba(255,200,87,.3);
+    border-radius:12px;padding:16px 18px;font-size:14.5px;line-height:1.6;
+  }
+  .oracle b{color:var(--amber)}
+
+  .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+  .btn{
+    border:1px solid var(--edge);background:rgba(94,204,255,.08);color:var(--text);
+    padding:12px 22px;border-radius:12px;font-size:14px;cursor:pointer;font-family:inherit;
+    letter-spacing:.06em;transition:.15s;
+  }
+  .btn:hover{background:rgba(94,204,255,.2);border-color:var(--cyan)}
+  .btn.primary{background:linear-gradient(90deg,rgba(94,204,255,.25),rgba(167,139,250,.25));border-color:var(--violet)}
+
+  .log{margin-top:30px}
+  .log ul{list-style:none;font-family:monospace;font-size:12.5px;color:var(--dim)}
+  .log li{padding:4px 0}
+  .log .ly{color:var(--cyan)}
+
+  footer{text-align:center;margin-top:44px;color:var(--dim);font-size:12px;line-height:1.7}
+  footer a{color:var(--cyan);text-decoration:none}
+
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);
+    background:rgba(10,20,40,.95);border:1px solid var(--cyan);color:var(--text);
+    padding:11px 20px;border-radius:10px;font-size:14px;z-index:90;
+    opacity:0;pointer-events:none;transition:transform .3s,opacity .3s;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  @media (max-width:520px){
+    .timeline .yr{flex-basis:58px;font-size:13px}
+    .panel{padding:16px}
+  }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="logo">⏳ CHRONO-9000</div>
+    <div class="tagline">Personal Time Machine · Forward Travel Only</div>
+    <div class="now" id="nowClock"></div>
+  </header>
+
+  <!-- CONSOLE -->
+  <div class="panel" id="console">
+    <h2>◈ Set temporal destination</h2>
+    <div class="year-display" id="yearDisplay">2126</div>
+    <div class="year-sub" id="yearSub"></div>
+    <input type="range" id="yearSlider" min="0" max="1000" value="180">
+    <div class="slider-labels"><span id="minLabel"></span><span>— temporal displacement dial —</span><span>YEAR 3000</span></div>
+
+    <div class="presets">
+      <button class="chip" data-year="+1">Next year</button>
+      <button class="chip" data-year="2030">2030</button>
+      <button class="chip" data-year="2050">2050</button>
+      <button class="chip" data-year="2100">2100</button>
+      <button class="chip" data-year="2200">2200</button>
+      <button class="chip" data-year="2500">2500</button>
+      <button class="chip far" data-year="3000">3000</button>
+      <button class="chip far" data-year="random">🎲 Random</button>
+    </div>
+
+    <div class="row">
+      <label class="birth">Your birth year (optional):
+        <input type="number" id="birthYear" placeholder="1995" min="1900" max="2026">
+      </label>
+    </div>
+
+    <button class="engage" id="engageBtn">⚡ Engage</button>
+  </div>
+
+  <!-- REPORT -->
+  <div id="report">
+    <div class="panel">
+      <div class="report-head">
+        <div class="stamp">Temporal jump complete</div>
+        <h1 id="reportTitle">Welcome to 2126</h1>
+        <div class="sub" id="reportSub"></div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="section">
+        <h3>🛰 Predicted events on record by this year</h3>
+        <ul class="timeline" id="timeline"></ul>
+      </div>
+
+      <div class="section">
+        <h3>📰 Intercepted headlines from this era</h3>
+        <ul class="news" id="news"></ul>
+      </div>
+
+      <div class="oracle" id="oracle"></div>
+
+      <div class="actions">
+        <button class="btn primary" id="shareBtn">🔗 Share this jump</button>
+        <button class="btn" id="againBtn">⏪ Return to the present</button>
+      </div>
+    </div>
+
+    <div class="log panel" id="logPanel" style="margin-top:18px;display:none">
+      <h2>◈ Captain's travel log</h2>
+      <ul id="logList"></ul>
+    </div>
+  </div>
+
+  <footer>
+    CHRONO-9000 · a toy time machine that lives in your browser.<br>
+    Events tagged <span style="color:var(--cyan)">real</span>/<span style="color:var(--amber)">cosmic</span> are genuine scientific predictions; the headlines are speculative fiction, freshly fabricated for your destination year.<br>
+    Built for <a href="../index.html">rabby8933.github.io/developer-rabbykhan</a>
+  </footer>
+</div>
+
+<!-- WARP OVERLAY -->
+<div id="warp">
+  <canvas id="warpCanvas"></canvas>
+  <div class="warp-year" id="warpYear">2026</div>
+  <div class="warp-msg" id="warpMsg">Accelerating through spacetime…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   CHRONO-9000 — forward-only time machine
+   ============================================================ */
+const NOW = new Date();
+const THIS_YEAR = NOW.getFullYear();
+const MIN_YEAR = THIS_YEAR + 1;
+const MAX_YEAR = 3000;
+
+const $ = id => document.getElementById(id);
+
+/* ---------- live clock (the "present" anchor) ---------- */
+function tickClock(){
+  $("nowClock").textContent = "PRESENT ANCHOR ▸ " + NOW.toDateString() + " " + new Date().toLocaleTimeString();
+}
+tickClock(); setInterval(tickClock, 1000);
+
+/* ---------- background starfield ---------- */
+const bg = $("stars"), bctx = bg.getContext("2d");
+let bgStars = [];
+function resizeBg(){
+  bg.width = innerWidth; bg.height = innerHeight;
+  bgStars = Array.from({length: Math.min(220, innerWidth/4)}, () => ({
+    x: Math.random()*bg.width, y: Math.random()*bg.height,
+    r: Math.random()*1.4+.3, tw: Math.random()*Math.PI*2, sp: .2+Math.random()*.8
+  }));
+}
+resizeBg(); addEventListener("resize", resizeBg);
+(function drawBg(t){
+  bctx.clearRect(0,0,bg.width,bg.height);
+  for(const s of bgStars){
+    const a = .35 + .65*Math.abs(Math.sin(t/1400*s.sp + s.tw));
+    bctx.globalAlpha = a;
+    bctx.fillStyle = "#cfe8ff";
+    bctx.beginPath(); bctx.arc(s.x, s.y, s.r, 0, 7); bctx.fill();
+  }
+  bctx.globalAlpha = 1;
+  requestAnimationFrame(drawBg);
+})(0);
+
+/* ---------- slider <-> year mapping (log-ish so near years get room) ---------- */
+function sliderToYear(v){
+  const t = v/1000;
+  const span = MAX_YEAR - MIN_YEAR;
+  return Math.round(MIN_YEAR + span * Math.pow(t, 2.2));
+}
+function yearToSlider(y){
+  const span = MAX_YEAR - MIN_YEAR;
+  const t = Math.pow(Math.max(0,(y - MIN_YEAR))/span, 1/2.2);
+  return Math.round(t*1000);
+}
+
+const slider = $("yearSlider");
+$("minLabel").textContent = "YEAR " + MIN_YEAR;
+let destYear = 2126;
+
+function describeGap(y){
+  const d = y - THIS_YEAR;
+  if(d <= 1)   return "barely a hop — the ink on today's news will still be wet";
+  if(d <= 5)   return d + " years out · your phone will feel ancient";
+  if(d <= 15)  return d + " years out · within one career, one mortgage, one long story";
+  if(d <= 40)  return d + " years out · today's toddlers will be running things";
+  if(d <= 80)  return d + " years out · roughly one human lifetime away";
+  if(d <= 200) return d + " years out · everyone you've ever met belongs to history";
+  if(d <= 500) return d + " years out · your name survives only in databases and dreams";
+  return d + " years out · deep future — civilizations reshuffle at this range";
+}
+function setYear(y, moveSlider=true){
+  destYear = Math.min(MAX_YEAR, Math.max(MIN_YEAR, y));
+  $("yearDisplay").textContent = destYear;
+  $("yearSub").textContent = describeGap(destYear);
+  if(moveSlider) slider.value = yearToSlider(destYear);
+}
+slider.addEventListener("input", () => setYear(sliderToYear(+slider.value), false));
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+  const v = c.dataset.year;
+  if(v === "random") setYear(MIN_YEAR + Math.floor(Math.random()*(MAX_YEAR-MIN_YEAR+1)));
+  else if(v === "+1") setYear(THIS_YEAR+1);
+  else setYear(+v);
+}));
+
+/* ---------- seeded RNG so every year has ITS OWN stable future ---------- */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const pick = (rng, arr) => arr[Math.floor(rng()*arr.length)];
+
+/* ---------- real predicted events (genuine science / scheduled facts) ---------- */
+const EVENTS = [
+  {y:2027, real:1, t:"<b>Longest total solar eclipse</b> of the century (6 min 23 s) sweeps over Luxor, Egypt — Aug 2, 2027."},
+  {y:2029, real:1, t:"Asteroid <b>99942 Apophis</b> (340 m wide) skims past Earth closer than our TV satellites — Apr 13, 2029. It will miss. Probably worth watching anyway."},
+  {y:2030, real:1, t:"<b>NASA plans to retire the ISS</b> around 2030 — the first continuously-lived-in space home comes down after ~30 years."},
+  {y:2031, real:1, t:"Comet <b>C/2014 UN271 (Bernardinelli–Bernstein)</b>, the largest comet ever found (~120 km), reaches its closest point to the Sun."},
+  {y:2038, real:1, t:"<b>The Year-2038 problem</b>: 32-bit Unix clocks overflow on Jan 19, 03:14:07 UTC. Programmers of the 2030s inherit Y2K's sequel."},
+  {y:2045, real:1, t:"A <b>total solar eclipse</b> crosses the USA coast-to-coast, Aug 12, 2045 — the 'Greatest American Eclipse'."},
+  {y:2061, real:1, t:"<b>Halley's Comet returns</b> (perihelion Jul 28, 2061) — the once-per-lifetime visitor, back on schedule."},
+  {y:2063, real:1, t:"Per Star Trek canon, <b>First Contact</b> occurs Apr 5, 2063. Officially unconfirmed. Vulcans unavailable for comment."},
+  {y:2100, real:1, t:"UN projections put <b>world population near its peak (~10.3 billion)</b> around the 2080s, easing toward 2100."},
+  {y:2117, real:1, t:"<b>Transit of Venus</b> — Venus crosses the Sun's face (Dec 11, 2117), first time since 2012."},
+  {y:2134, real:1, t:"<b>Halley's Comet</b> swings by again (Mar 27, 2134), passing unusually close to Earth this lap."},
+  {y:2178, real:1, t:"<b>Pluto completes its first full orbit</b> since being discovered by humans in 1930 (248-year year)."},
+  {y:2261, real:1, t:"Halley's Comet, third visit since your departure. By now watching it is a family tradition you started."},
+  {y:2400, cosmic:1, t:"Earth's slowing rotation forces timekeepers to keep adding <b>leap seconds</b>; calendar cranks of the 25th century debate abolishing them. Again."},
+  {y:2669, cosmic:1, t:"Asteroid <b>(153814) 2001 WN5</b> passes within the Moon's distance of Earth (Jun 26, 2669) — pencilled into astronomers' diaries 650 years early."},
+  {y:2880, cosmic:1, t:"Asteroid <b>(29075) 1950 DA</b> makes its much-studied close approach (Mar 16, 2880). Odds of impact: tiny, and shrinking with every measurement."},
+  {y:3000, cosmic:1, t:"Due to axial precession, <b>Gamma Cephei is taking over from Polaris</b> as the north star. Navigation textbooks: please update."},
+];
+
+/* ---------- headline generator (deterministic per year) ---------- */
+const H = {
+  near: [ // ≤ ~15 years
+    ["<b>{city}</b> opens the world's first {adj} {tech} district; commuters report it's 'fine, actually'","{city} Metro Herald"],
+    ["{tech} assistants now handle {pct}% of {job} paperwork; {job}s celebrate by taking {day} off","The Daily Upload"],
+    ["Scientists teach {animal}s to respond to {tech} prompts; the {animal}s remain unimpressed","Journal of Optimistic Results"],
+    ["'{food}, but lab-grown' wins taste test against the original for the first time","Gastronomy Wire"],
+    ["Your smart-{item} now requires {n} software updates a week. Experts recommend patience","Consumer Signal"],
+  ],
+  mid: [ // ~15–80 years
+    ["<b>{city} Lunar Terminal</b> celebrates its {n}th anniversary; moon-lag officially recognized as an excuse for missing meetings","Off-World Gazette"],
+    ["Last {item} factory converts to museum; children ask what a '{item}' was for","Heritage Weekly"],
+    ["First {job} elected on {planet} colony promises '{adj} policies for all 3,000 residents'","Colonial Dispatch"],
+    ["Ocean cleanup fleets report {pct}% plastic reduction; retired barges repurposed as {animal} sanctuaries","Blue Planet Report"],
+    ["Grandparents nostalgic for 'typing on glass rectangles'; retro {tech} cafés open in {city}","The Long Now Ledger"],
+  ],
+  far: [ // 80+ years
+    ["<b>United {planet} Assembly</b> votes {n}–3 to keep Earth's original calendar 'for sentimental reasons'","Interplanetary Record"],
+    ["Archaeologists excavate a 21st-century data center; historians moved to tears by folder named '{folder}'","Deep Time Review"],
+    ["{planet} terraforming enters phase {n}; first outdoor {food} stand opens under the new sky","Frontier Chronicle"],
+    ["Language scholars confirm '{slang}' — a 2020s expression — is still in use, meaning now unknown","Institute of Dead Memes"],
+    ["Generation ship <b>{ship}</b> sends postcard from {dist} light-years out: 'wish you were here'","The Stellar Courier"],
+  ],
+};
+const W = {
+  city:["Dhaka","Tokyo","Lagos","São Paulo","Nairobi","Reykjavík","Singapore","Toronto","Cairo","Seoul"],
+  adj:["fully-recyclable","self-repairing","zero-gravity","solar-punk","noise-free","vertical","floating"],
+  tech:["neural-lace","holo","quantum","fusion-powered","swarm-robotic","photonic","bio-printed"],
+  job:["accountant","dentist","mayor","barista","architect","referee","librarian"],
+  day:["Tuesday","a long weekend","the whole month","a mental-health year"],
+  animal:["octopus","crow","capybara","dolphin","axolotl"],
+  food:["biryani","ramen","mango","chocolate","street-corner fuchka"],
+  item:["car key","password","charging cable","wallet","traffic light","ironing board"],
+  planet:["Mars","Luna","Europa","Titan","Venus Cloud-City"],
+  folder:["FINAL_final_v2","tax stuff","memes (important)","DO NOT DELETE","new folder (7)"],
+  slang:["no cap","rizz","it's giving","touch grass","skill issue"],
+  ship:["ESS Wanderlust","ISV Long Patience","SS Are-We-There-Yet","ESS Homesick"],
+  pct:()=>String(55+Math.floor(Math.random()*40)),
+  n:()=>String(4+Math.floor(Math.random()*40)),
+  dist:()=>(2+Math.random()*10).toFixed(1),
+};
+function fill(rng, tpl){
+  return tpl.replace(/\{(\w+)\}/g, (_,k) => {
+    const v = W[k];
+    if(typeof v === "function"){ // deterministic: temporarily hijack Math.random
+      const mr = Math.random; Math.random = rng;
+      const out = v(); Math.random = mr; return out;
+    }
+    return pick(rng, v);
+  });
+}
+function makeHeadlines(year){
+  const rng = mulberry32(year * 2654435761 % 2147483647);
+  const gap = year - THIS_YEAR;
+  const pool = gap <= 15 ? H.near : gap <= 80 ? H.mid : H.far;
+  const used = new Set(), out = [];
+  while(out.length < 3 && used.size < pool.length){
+    const i = Math.floor(rng()*pool.length);
+    if(used.has(i)) continue;
+    used.add(i);
+    const [tpl, src] = pool[i];
+    out.push({text: fill(rng, tpl), src: src + " · " + year});
+  }
+  return out;
+}
+
+/* ---------- oracle verdict ---------- */
+function oracleText(year, rng){
+  const gap = year - THIS_YEAR;
+  const mood = pick(rng, ["cautiously optimistic","surprisingly cozy","chaotic but survivable","quietly magnificent","weirder than advertised"]);
+  const advice = pick(rng, [
+    "Plant a tree today; someone in this year is sitting under it.",
+    "Back up your photos — future historians beg you.",
+    "Learn one thing deeply; it compounds all the way to here.",
+    "Be kind in the group chat. The logs are eternal.",
+    "Buy less stuff, tell more stories. Stories are what made it this far.",
+  ]);
+  return `<b>Oracle's verdict:</b> The year ${year} reads as <b>${mood}</b>. ` +
+         (gap <= 80
+          ? `You have a real shot at seeing it in person — the machine merely offers a preview. `
+          : `You won't walk these streets, but every choice you make in ${THIS_YEAR} is a letter mailed here. `) +
+         advice;
+}
+
+/* ---------- future report ---------- */
+const fmt = n => n.toLocaleString("en-US");
+function buildReport(year){
+  const gap = year - THIS_YEAR;
+  const arrival = new Date(NOW); arrival.setFullYear(year);
+  const days = Math.round((arrival - NOW) / 864e5);
+  const rng = mulberry32(year ^ 0x5F3759DF);
+
+  $("reportTitle").textContent = "Welcome to " + year;
+  $("reportSub").textContent = arrival.toDateString() + " · local reality may vary";
+
+  // stats
+  const stats = [
+    {v: fmt(gap), k: "years travelled"},
+    {v: fmt(days), k: "days skipped"},
+    {v: fmt(days*24), k: "hours skipped"},
+    {v: fmt(Math.round(gap/4)), k:"leap years missed"},
+  ];
+  const by = parseInt($("birthYear").value, 10);
+  if(by >= 1900 && by <= THIS_YEAR){
+    const age = year - by;
+    stats.push({v: fmt(age), k: age <= 122 ? "your age here" : "your age (record: 122)", you:1});
+  }
+  $("stats").innerHTML = stats.map(s =>
+    `<div class="stat${s.you?" you":""}"><div class="v">${s.v}</div><div class="k">${s.k}</div></div>`).join("");
+
+  // timeline: everything scheduled between now and destination (last 7, closest first)
+  const passed = EVENTS.filter(e => e.y <= year);
+  const upcoming = EVENTS.filter(e => e.y > year).slice(0,1);
+  const shown = passed.slice(-6);
+  $("timeline").innerHTML =
+    shown.map(e =>
+      `<li><span class="yr">${e.y}</span><span class="ev">${e.t}<span class="tag ${e.real?"real":"cosmic"}">${e.real?"real":"cosmic"}</span></span></li>`).join("") +
+    upcoming.map(e =>
+      `<li><span class="yr">${e.y}</span><span class="ev" style="opacity:.65">Coming up next era: ${e.t}</span></li>`).join("") ||
+    `<li><span class="yr">—</span><span class="ev">No events on record. You are officially off the map, traveller.</span></li>`;
+
+  // headlines
+  $("news").innerHTML = makeHeadlines(year).map(h =>
+    `<li>${h.text}<span class="src">— ${h.src}</span></li>`).join("");
+
+  // oracle
+  $("oracle").innerHTML = oracleText(year, rng);
+
+  // travel log
+  saveLog(year);
+  renderLog();
+}
+
+/* ---------- travel log (localStorage) ---------- */
+const LOG_KEY = "chrono9000_log";
+function saveLog(year){
+  let log = [];
+  try{ log = JSON.parse(localStorage.getItem(LOG_KEY)) || []; }catch(e){}
+  log.unshift({y: year, at: new Date().toISOString()});
+  localStorage.setItem(LOG_KEY, JSON.stringify(log.slice(0,8)));
+}
+function renderLog(){
+  let log = [];
+  try{ log = JSON.parse(localStorage.getItem(LOG_KEY)) || []; }catch(e){}
+  if(log.length < 2){ $("logPanel").style.display = "none"; return; }
+  $("logPanel").style.display = "block";
+  $("logList").innerHTML = log.map(e =>
+    `<li>▸ jumped to <span class="ly">${e.y}</span> — logged ${new Date(e.at).toLocaleString()}</li>`).join("");
+}
+
+/* ---------- warp animation ---------- */
+const warp = $("warp"), wc = $("warpCanvas"), wctx = wc.getContext("2d");
+function runWarp(targetYear, done){
+  wc.width = innerWidth; wc.height = innerHeight;
+  const cx = wc.width/2, cy = wc.height/2;
+  const stars = Array.from({length:420}, () => spawnStar());
+  function spawnStar(){
+    const a = Math.random()*Math.PI*2, r = Math.random()*30;
+    return {x:Math.cos(a)*r, y:Math.sin(a)*r, vx:Math.cos(a), vy:Math.sin(a), sp:.5+Math.random()*2, hue:Math.random()<.7?200:Math.random()<.5?270:45};
+  }
+  warp.classList.add("on");
+  const D = 3400, t0 = performance.now();
+  const startYear = THIS_YEAR;
+  const msgs = ["Accelerating through spacetime…","Skipping birthdays…","Dodging paradoxes…","Decelerating… hold on…"];
+  (function frame(t){
+    const p = Math.min(1, (t - t0)/D);
+    const ease = p<.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+    // year counter
+    $("warpYear").textContent = Math.round(startYear + (targetYear-startYear)*ease);
+    $("warpMsg").textContent = msgs[Math.min(msgs.length-1, Math.floor(p*msgs.length))];
+    // streaks
+    const speed = 1 + 34*Math.sin(Math.PI*p); // slow-fast-slow
+    wctx.fillStyle = "rgba(0,0,5,.32)";
+    wctx.fillRect(0,0,wc.width,wc.height);
+    for(const s of stars){
+      const px = s.x, py = s.y;
+      s.x += s.vx * s.sp * speed;
+      s.y += s.vy * s.sp * speed;
+      s.sp *= 1.01;
+      wctx.strokeStyle = `hsla(${s.hue},90%,75%,.9)`;
+      wctx.lineWidth = Math.min(3, s.sp*.4);
+      wctx.beginPath();
+      wctx.moveTo(cx+px, cy+py);
+      wctx.lineTo(cx+s.x, cy+s.y);
+      wctx.stroke();
+      if(Math.abs(s.x) > cx+60 || Math.abs(s.y) > cy+60) Object.assign(s, spawnStar());
+    }
+    if(p < 1) requestAnimationFrame(frame);
+    else {
+      // white flash then done
+      wctx.fillStyle = "#eaf6ff"; wctx.fillRect(0,0,wc.width,wc.height);
+      setTimeout(() => { warp.classList.remove("on"); done(); }, 240);
+    }
+  })(t0);
+}
+
+/* ---------- engage / share / reset ---------- */
+function travel(year){
+  runWarp(year, () => {
+    $("console").style.display = "none";
+    buildReport(year);
+    $("report").style.display = "block";
+    history.replaceState(null, "", "?year=" + year + (($("birthYear").value)?("&born="+$("birthYear").value):""));
+    scrollTo({top:0, behavior:"smooth"});
+  });
+}
+$("engageBtn").addEventListener("click", () => travel(destYear));
+$("againBtn").addEventListener("click", () => {
+  $("report").style.display = "none";
+  $("console").style.display = "block";
+  history.replaceState(null, "", location.pathname);
+  scrollTo({top:0, behavior:"smooth"});
+});
+$("shareBtn").addEventListener("click", async () => {
+  const url = location.origin + location.pathname + "?year=" + destYear;
+  const text = "I travelled to the year " + destYear + " in the CHRONO-9000 time machine. Come see the future:";
+  try{
+    if(navigator.share){ await navigator.share({title:"CHRONO-9000", text, url}); return; }
+    await navigator.clipboard.writeText(text + " " + url);
+    toast("Link copied — send it to a fellow traveller!");
+  }catch(e){ toast(url); }
+});
+function toast(msg){
+  const el = $("toast");
+  el.textContent = msg; el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+/* ---------- boot: honor shared links ?year=2150&born=1995 ---------- */
+setYear(destYear);
+const q = new URLSearchParams(location.search);
+const qy = parseInt(q.get("year"), 10);
+const qb = parseInt(q.get("born"), 10);
+if(qb >= 1900 && qb <= THIS_YEAR) $("birthYear").value = qb;
+if(qy >= MIN_YEAR && qy <= MAX_YEAR){ setYear(qy); travel(qy); }
+</script>
+</body>
+</html>
