@@ -1,5 +1,18 @@
 # developer-rabbykhan
 
+## ⚽ ORACLE 2026 — FIFA World Cup 2026 match predictor!
+
+Pick any two of the 48 World Cup teams and the oracle predicts the match: win/draw probabilities, the most likely score, and a verdict — or simulate the **entire tournament 5,000 times** to see who lifts the trophy.
+
+**▶ Predict:** https://rabby8933.github.io/developer-rabbykhan/fifa-2026/index.html
+
+- 🎯 Any matchup, group-stage or knockout mode (knockout resolves extra time & penalties)
+- 🔥 One-tap hot matchups: Brazil–Argentina, England–France, USA–Mexico & more
+- 🏆 "Who lifts the trophy?" — Monte Carlo simulation of the full 48-team, 104-match tournament
+- 🔗 Share any prediction with a link like `?a=ARG&b=BRA&ko=1`
+- Powered by Elo-style strength ratings + Poisson score model — for fun, not betting advice
+- Self-contained in one file: [`fifa-2026/index.html`](fifa-2026/index.html)
+
 ## ⏳ CHRONO-9000 — a time machine to see the future!
 
 Step into the machine, dial any year up to 3000, hit **⚡ ENGAGE**, and warp through a starfield to your destination. When you arrive you get a full **future report**:
